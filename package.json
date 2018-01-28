@@ -1,0 +1,12 @@
+{
+  "name": "pranageo-server",
+  "version": "1.0.0",
+  "description": "Just a Challenge",
+  "main": "server.js",
+  "author": "Taher Atashbar",
+  "dependencies": {
+    "express": "latest",
+    "request": "latest",
+    "cheerio": "latest"
+  }
+}
