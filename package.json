@@ -5,8 +5,9 @@
   "main": "server.js",
   "author": "Taher Atashbar",
   "dependencies": {
+    "cheerio": "latest",
     "express": "latest",
-    "request": "latest",
-    "cheerio": "latest"
+    "redis": "^2.8.0",
+    "request": "latest"
   }
 }

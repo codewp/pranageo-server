@@ -1,7 +1,5 @@
 const express   = require('express');
 const fs        = require('fs');
-const request   = require('request');
-const cheerio   = require('cheerio');
 const mdCreator = require('./utils/markdown-creator');
 const app       = express();
 const port      = 8081;
@@ -12,46 +10,19 @@ app.use(function(req, res, next) {
   next();
 });
 
+mdCreator.createItems().catch(reason => { console.log(reason) });
+
 app.get('/items', function(req, res){
-  request('https://cran.r-project.org/manuals.html', function(error, response, html){
-    if (error) {
-      return res.send('error occurred!');
+  mdCreator.createItems().then(function(value) {
+    if (value) {
+      return res.send({ 'items' : value });
     }
 
-    var $     = cheerio.load(html),
-        items = [],
-        name  = link = '';
-
-    $('table tbody tr').each(function() {
-      name = $( 'td:nth-child(1) strong', $(this) ).html();
-      if ( 'The R Reference Index' === name ) {
-        return true;
-      }
-      link = $('td:nth-child(2) a', $(this)).first().attr('href');
-      if ( name && name.length && link && link.length ) {
-        items.push( { 'name' : name, 'link' : link } );
-      }
-    });
-
-    if (! items.length) {
-      return res.send('error occurred!');
-    }
-
-    for (var i = 0, max = items.length; i < max; i++) {
-      link = mdCreator.createMarkdown(items[i].name, items[i].link);
-      // Try again.
-      if (! link) {
-        link = mdCreator.createMarkdown(items[i].name, items[i].link);
-      }
-
-      if (! link) {
-        return res.send('error occurred!');
-      }
-      items[i].link = 'http://localhost:' + port + '/' + link;
-    }
-
-    res.send({ 'items' : items });
-  })
+    return res.send('error occurred!');
+  }).catch(function(reason) {
+    console.log(reason);
+    return res.send('error occurred!');
+  });
 })
 
 app.get('/download/:fileName', function(req, res) {
