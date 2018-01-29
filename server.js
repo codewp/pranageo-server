@@ -1,8 +1,8 @@
 const express   = require('express');
 const fs        = require('fs');
 const mdCreator = require('./utils/markdown-creator');
+const config    = require('./config');
 const app       = express();
-const port      = 8081;
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -10,33 +10,41 @@ app.use(function(req, res, next) {
   next();
 });
 
-mdCreator.createItems().catch(reason => { console.log(reason) });
+// Create items.
+mdCreator.createItems(function(err, items) {
+  if (err) {
+    return console.log(err.message);
+  }
+});
 
+// A route to get list of items.
 app.get('/items', function(req, res){
-  mdCreator.createItems().then(function(value) {
-    if (value) {
-      return res.send({ 'items' : value });
+  mdCreator.createItems(function(err, items) {
+    if (err) {
+      console.log(err.message);
+      return res.send('error occurred!');
     }
 
-    return res.send('error occurred!');
-  }).catch(function(reason) {
-    console.log(reason);
-    return res.send('error occurred!');
+    if (items) {
+      return res.send({ 'items' : items });
+    }
   });
 })
 
+// A route to downloading files.
 app.get('/download/:fileName', function(req, res) {
   if (! req.params.fileName) {
     return res.send('error');
   }
 
-  var file = __dirname + '/files/' + req.params.fileName;
+  var file = config.FILES_DIR + req.params.fileName;
   if (! fs.existsSync(file)) {
     return res.send('error');
+  } else {
+    res.download(file);
   }
-  res.download(file);
 })
 
-app.listen(port);
-console.log('Magic happens on port 8081');
+app.listen(config.PORT);
+console.log('Magic happens on port ' + config.PORT);
 exports = module.exports = app;
