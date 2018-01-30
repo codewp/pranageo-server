@@ -1,4 +1,4 @@
-const PORT      = 8081;
+const PORT      = 8080;
 const APP_DIR   = __dirname;
 const FILES_DIR = APP_DIR + '/files/';
 
