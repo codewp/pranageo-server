@@ -155,7 +155,7 @@ function createItems(callback) {
 				}
 
 				if (value) {
-					items[ index ].link = 'http://localhost:' + config.PORT + '/' + value;
+					items[ index ].link = 'http://' + config.DOMAIN + ':' + config.PORT + '/' + value;
 					if (++counter === items.length) {
 						return callback(false, items);
 					}
