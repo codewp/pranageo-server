@@ -45,6 +45,5 @@ app.get('/download/:fileName', function(req, res) {
   }
 })
 
-app.listen(config.PORT);
-console.log('Magic happens on port ' + config.PORT);
+app.listen(config.PORT, () => console.log('Challenge app listening on port ' + config.PORT));
 exports = module.exports = app;
