@@ -4,8 +4,8 @@ const request  = require('request');
 const cheerio  = require('cheerio');
 const redis    = require('redis');
 const config   = require('../config');
-const RMD_Ext  = '.Rmd';
-const MD_Ext   = '.md';
+const RMD_EXT  = '.Rmd';
+const MD_EXT   = '.md';
 
 /**
  * Creating a markdown file from html and converting it to Rmd file.
@@ -22,22 +22,22 @@ function createMarkdown(source, index, callback) {
 
 	var name = source.split('/').pop().split('.').shift();
 	if (name && name.length) {
-		if (! fs.existsSync(config.FILES_DIR + name + RMD_Ext)) {
-			exec('pandoc https://cran.r-project.org/' + source + ' -o ' + config.FILES_DIR + name + MD_Ext, (error, stdout, stderr) => {
+		if (! fs.existsSync(config.FILES_DIR + name + RMD_EXT)) {
+			exec('pandoc https://cran.r-project.org/' + source + ' -o ' + config.FILES_DIR + name + MD_EXT, (error, stdout, stderr) => {
 				if (error) {
 					return callback(new Error('Error occurred in converting html file to markdown file.'));
 				}
 
-				convertToRMarkdown(config.FILES_DIR + name + MD_Ext, function(error, value) {
+				convertToRMarkdown(config.FILES_DIR + name + MD_EXT, function(error, value) {
 					if (error || ! value) {
 						return callback(new Error('Error occurred in converting markdown file to Rmarkdown file.'));
 					}
 
-					return callback(false, 'download/' + name + RMD_Ext, index);
+					return callback(false, 'download/' + name + RMD_EXT, index);
 				});
 			});
 		} else {
-			return callback(false, 'download/' + name + RMD_Ext, index);
+			return callback(false, 'download/' + name + RMD_EXT, index);
 		}
 	} else {
 		return callback(new Error('error occurred in getting html file name.'));
@@ -62,13 +62,14 @@ function convertToRMarkdown(fileName, callback) {
 			return callback(err, false);
 		}
 		if (data) {
-			data = data.replace(new RegExp('``` {.example}', 'g'), '```{r}');
+			data = mdContentToRmd(data);
+
 			fs.writeFile(fileName, data, (err) => {
 				if (err) {
 					return callback(new Error('error occurred in writing file.'), false);
 				}
 
-				fs.rename(fileName, fileName.substr(0, fileName.lastIndexOf('.')) + RMD_Ext, (err) => {
+				fs.rename(fileName, fileName.substr(0, fileName.lastIndexOf('.')) + RMD_EXT, (err) => {
 					if (err) {
 						return callback(new Error('error occurred in renaming file.'), false);
 					}
@@ -80,6 +81,37 @@ function convertToRMarkdown(fileName, callback) {
 			return callback(new Error('file is empty.'), false);
 		}
 	})
+}
+
+/**
+ * Adjusting markdown content to becomes a valid Rmd file.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} content
+ */
+function mdContentToRmd(content) {
+	if (! content || ! content.length) {
+		return content;
+	}
+
+	var matches = content.match(/(?:```(\s*?)\{(.+)\})([\S\s]*?)(?:```)/g);
+	if (matches && matches.length) {
+		for (var i = 0, max = matches.length, splits; i < max; i++) {
+			splits = matches[ i ].split("\n");
+			if (splits && splits.length) {
+				for (var j = 0, maxJ = splits.length; j < maxJ; j++) {
+					if (/^([\s\t]*?)>/.test(splits[ j ])) {
+						content = content.replace(splits[ j ], splits[ j ].replace(/^([\s\t]*?)>/, ''));
+					} else if (/^([\s\t]*?)\$/.test(splits[ j ])) {
+						content = content.replace(splits[ j ], splits[ j ].replace(/^([\s\t]*?)\$/, ''));
+					}
+				}
+			}
+		}
+	}
+
+	return content.replace(/```(\s*?)\{(.+)\}/g, '```{r}');
 }
 
 /**
